@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+
+kind: Deployment
+
+metadata:
+  name: cricket-envoy-sidecar-deployment
+  labels:
+    app: cricket-envoy-sidecar
+
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: cricket-envoy-sidecar
+
+  template:
+    metadata:
+      labels:
+        app: cricket-envoy-sidecar
+
+    # The imp stuff
+    spec:
+      containers:
+      - name: cricket-envoy-sidecar
+        image: cricket-envoy-sidecar:latest
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 7199
+          name: envoy-port
+
+      - name: cricketscores
+        image: cricketscores:latest
+        imagePullPolicy: Never
+
+---
+apiVersion: v1
+
+kind: Service
+
+metadata:
+  name: cricket-envoy-sidecar-svc
+
+spec:
+  type: ClusterIP
+
+  selector:
+    app: cricket-envoy-sidecar
+
+  ports:
+  - name: cricket-envoy-sidecar-svc-port
+    protocol: TCP
+    port: 7199
+    targetPort: envoy-port

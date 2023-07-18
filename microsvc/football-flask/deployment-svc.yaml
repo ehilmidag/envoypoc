@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+
+kind: Deployment
+
+metadata:
+  name: football-envoy-sidecar-deployment
+  labels:
+    app: football-envoy-sidecar
+
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: football-envoy-sidecar
+
+  template:
+    metadata:
+      labels:
+        app: football-envoy-sidecar
+
+    # The imp stuff
+    spec:
+      containers:
+      - name: football-envoy-sidecar
+        image: football-envoy-sidecar:latest
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 6199
+          name: envoy-port
+
+      - name: footballscores
+        image: footballscores:latest
+        imagePullPolicy: Never
+
+---
+apiVersion: v1
+
+kind: Service
+
+metadata:
+  name: football-envoy-sidecar-svc
+
+spec:
+  type: ClusterIP
+
+  selector:
+    app: football-envoy-sidecar
+
+  ports:
+  - name: football-envoy-sidecar-svc-port
+    protocol: TCP
+    port: 6199
+    targetPort: envoy-port

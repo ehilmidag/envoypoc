@@ -1,0 +1,49 @@
+static_resources:
+  listeners:
+  - name: edge_listener
+
+    address:
+      socket_address:
+        address: 0.0.0.0
+        port_value: 3200
+
+    filter_chains:
+    - filters:
+      - name: envoy.filters.network.http_connection_manager
+        typed_config:
+          "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          # used when emitting stats
+          stat_prefix: edge_hcm_filter
+          
+          http_filters:
+          - name: envoy.filters.http.router
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          
+          route_config:
+            name: edge_http_route_config
+            virtual_hosts:
+            # name used when emitting stats, not imp for routing itself
+            - name: edge_virtual_host
+              domains: 
+              - "*"
+              routes:
+              - name:
+                match:
+                  prefix: "/"
+                route:
+                  cluster: lss_sidecar_envoy
+
+  clusters:
+  - name: lss_sidecar_envoy
+    type: STRICT_DNS
+    lb_policy: ROUND_ROBIN
+    load_assignment:
+      cluster_name: lss_sidecar_envoy
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: mainapp-envoy-sidecar-svc
+                port_value: 5199
